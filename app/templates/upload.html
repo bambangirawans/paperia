@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+	<div class="container">
+		<div class="profile-wrapper-area py-3">
+		    <div class="card user-info-card">
+				<div class="card-body p-4 d-flex align-items-center">
+				  <div class="user-profile me-3"><img src="{{ url_for('static', filename='img/bg-img/9.jpg') }}"  alt="">
+					<div class="change-user-thumb">
+					  <!--<form>
+						<input class="form-control-file" type="file">
+						<button><i class="lni lni-pencil"></i></button>
+					  </form>-->
+					</div>
+				  </div>
+				  <div class="user-info">
+					<h5 class="mb-0">Upload Document</h5>
+				  </div>
+				</div>
+			</div>
+		  
+			<div class="card user-data-card">
+				<div class="card-body">		  
+						<form method="POST" enctype="multipart/form-data">
+							<div class="mb-3">
+								<div class="title mb-2"><i class="lni lni-envelope"></i><span>Choose Documen</span></div>
+								<input class="form-control" type="file" id="document" name="document">
+							</div>
+							<div class="mb-3">
+								<div class="title mb-2"><i class="lni lni-user"></i><span>Document Type</span></div>
+								<select class="mb-3 form-control form-select" name="doc_type">
+									<option value="invoice">Invoice</option>
+									<option value="purchase">Purchase Order</option>
+									<option value="supplier_payment">Supplier Payment</option>
+									<option value="customer_receipt">Customer Receipt</option>
+									<option value="other_payment">Others Payment</option>
+									<option value="other_receipt">Others Receipt</option>
+									<option value="other">Other Business Document</option>
+								</select>
+							</div>
+							<button type="submit" class="btn btn-success w-100">Upload</button>
+						 </form>
+			
+
+		</div>
+	</div>
+{% endblock %}

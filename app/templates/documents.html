@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+	<div class="container">
+		<div class="product-catagories-wrapper py-3">
+			<div class="container">
+				<div class="section-heading">
+					<h6>Documents</h6>
+				</div>
+				<div class="product-catagory-wrap">
+						<div class="row g-3">
+							<ul>
+								{% for document in documents %}
+								<li>
+									{{ document.filename }} - {{ document.doc_type }} - {{ document.created_at }}
+								</li>
+								{% endfor %}
+							</ul>>
+					  </form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

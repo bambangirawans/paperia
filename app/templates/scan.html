@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+	<div class="container">
+		<div class="profile-wrapper-area py-3">
+		    <div class="card user-info-card">
+				<div class="card-body p-4 d-flex align-items-center">
+					<div class="user-profile me-3"><img src="{{ url_for('static', filename='img/bg-img/9.jpg') }}"  alt="">
+						<div class="change-user-thumb">
+						  <!--<form>
+							<input class="form-control-file" type="file">
+							<button><i class="lni lni-pencil"></i></button>
+						  </form>-->
+						</div>
+					</div>
+					<div class="user-info">
+						<h5 class="mb-0">Scan Item<</h5>
+					</div>
+				</div>
+			</div>
+		  
+			<div class="card user-data-card">
+				<div class="card-body">		  
+						<form action="/scan_item" method="post" enctype="multipart/form-data">
+							<div class="mb-3">
+								<div class="title mb-2"><i class="lni lni-envelope"></i><span>Select image:</span></div>
+								<input class="form-control"type="file" id="image" name="image" accept="image/*">
+							</div>
+							
+							<button type="submit" class="btn btn-success w-100">Scan</button>
+						 </form>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

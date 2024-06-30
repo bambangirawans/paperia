@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+	<div class="container">
+		<div class="product-catagories-wrapper py-3">
+			<div class="container">
+				<div class="section-heading">
+					<h6>Edit Document<</h6>
+				</div>
+				<div class="product-catagory-wrap">
+						<div class="row g-3">
+							<form method="POST">
+							<div class="mb-3">
+							  <label for="documentText" class="form-label">Document Text</label>
+							  <textarea class="form-control" id="documentText" name="documentText" rows="10">{{ doc_text }}</textarea>
+							</div>
+							<button type="submit" class="btn btn-primary">Save</button>
+							<a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Back to Home</a>
+					  </form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
