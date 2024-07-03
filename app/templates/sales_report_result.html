@@ -1,0 +1,23 @@
+<!-- templates/report.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Report Analysis and Recommendations</h2>
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Summary</h5>
+            <p class="card-text">Total Invoices: {{ summary.total_invoices }}</p>
+            <p class="card-text">Total Revenue: ${{ summary.total_revenue }}</p>
+            <p class="card-text">Total Customers: {{ summary.total_customers }}</p>
+            <p class="card-text">Total Products Sold: {{ summary.total_products_sold }}</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Analysis and Recommendations</h5>
+            <p class="card-text">{{ analysis }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
