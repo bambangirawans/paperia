@@ -14,7 +14,7 @@ from .models.sales_and_marketing import process_sales_and_marketing
 main_bp = Blueprint('main', __name__)
 
 # Configure the upload folder
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg','pdf'}
 
 # Helper function to check allowed file types
 def allowed_file(filename):
@@ -47,7 +47,82 @@ def scan_item():
     
     return jsonify({'error': 'Invalid file type'}), 400
 
+def parse_invoice(text):
+    invoice_data = {}
+    invoice_data['invoice_number'] = re.search(r'Invoice Number:\s*(\S+)', text).group(1)
+    invoice_data['date'] = re.search(r'Date:\s*([\d-]+)', text).group(1)
+    invoice_data['subtotal'] = re.search(r'Subtotal:\s*\$?([\d.]+)', text).group(1)
+    invoice_data['total'] = re.search(r'Total:\s*\$?([\d.]+)', text).group(1)
+    return invoice_data
 
+def parse_customer(text):
+    customer_data = {}
+    customer_data['name'] = re.search(r'Customer Name:\s*(.+)', text).group(1)
+    customer_data['address'] = re.search(r'Address:\s*(.+)', text).group(1)
+    customer_data['phone'] = re.search(r'Phone:\s*(\S+)', text).group(1)
+    return customer_data
+
+def parse_products(text):
+    products = []
+    product_pattern = re.compile(r'Product:\s*(.+?)\s*Qty:\s*(\d+)\s*Price:\s*\$?([\d.]+)', re.DOTALL)
+    for match in product_pattern.finditer(text):
+        product_data = {
+            'name': match.group(1).strip(),
+            'quantity': int(match.group(2)),
+            'unit_price': float(match.group(3))
+        }
+        products.append(product_data)
+    return products
+
+    
+def save_invoice_data (text)
+
+        invoice_data = parse_invoice(extracted_text)
+        customer_data = parse_customer(extracted_text)
+        products_data = parse_products(extracted_text)
+        
+        customer = Customer.query.filter_by(name=customer_data['name']).first()
+        if not customer:
+            customer = Customer(
+                name=customer_data['name'],
+                address=customer_data['address'],
+                phone=customer_data['phone']
+            )
+            db.session.add(customer)
+            db.session.commit()
+        
+        invoice = Invoice(
+            date=datetime.strptime(invoice_data['date'], '%Y-%m-%d'),
+            customer_id=customer.id,
+            subtotal=float(invoice_data['subtotal']),
+            total=float(invoice_data['total'])
+        )
+        db.session.add(invoice)
+        db.session.commit()
+        
+       for product_data in products_data:
+
+            product = Product.query.filter_by(name=product_data['name']).first()
+            if not product:
+                product = Product(
+                    name=product_data['name'],
+                    unit_price=product_data['unit_price']
+                )
+                db.session.add(product)
+                db.session.commit()
+            
+            invoice_item = InvoiceItem(
+                invoice_id=invoice.id,
+                product_id=product.id,
+                qty=product_data['quantity'],
+                unit_price=product.unit_price,
+                total=product_data['quantity'] * product.unit_price
+            )
+            db.session.add(invoice_item)
+        
+        db.session.commit()
+        
+    return 'invoice successfully processed'
 
 @main_bp.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -87,6 +162,7 @@ def upload():
             db.session.add(new_document)
             db.session.commit()
             return redirect(url_for('main.edit', doc_id=new_document.id))
+            
     return render_template('upload.html')
 
 @main_bp.route('/edit/<doc_id>', methods=['GET', 'POST'])
@@ -96,6 +172,37 @@ def edit(doc_id):
         updated_text = request.form['documentText']
         document.manual_corrected_text = updated_text
         db.session.commit()
+        
+        
+        data = parse_invoice(updated_text)
+        save_invoice_data(data)
+            
+        ''' 
+        doc_type =document.doc_type
+        
+        if doc_type == 'invoice':
+            data = parse_invoice(updated_text)
+            save_invoice_data(data)
+        elif doc_type == 'purchase':
+            data = parse_purchase(updated_text)
+            save_purchase_data(data)
+        elif doc_type == 'supplier_payment':
+            data = parse_supplier_payment(updated_text)
+            save_supplier_payment_data(data)
+        elif doc_type == 'customer_receipt':
+            data = parse_customer_receipt(updated_text)
+            save_customer_receipt_data(data)
+        elif doc_type == 'other_payment':
+            data = parse_other_payment(updated_text)
+            save_other_payment_data(data)
+        elif doc_type == 'other_receipt':
+            data = parse_other_receipt(updated_text)
+            save_other_receipt_data(data)
+        else:
+            data = parse_other_document(updated_text)
+            save_other_document_data(data)
+        '''
+        
         return redirect(url_for('main.dashboard'))
 
     return render_template('edit.html', doc_id=doc_id, doc_text=document.manual_corrected_text or document.corrected_text)
@@ -166,13 +273,39 @@ def receive_goods():
     response = process_goods_receipt(image_path, expected_items)
     return jsonify(response), 200
 
+@main_bp.route('/sales_report', methods=['POST'])
+def sales_report():
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
 
+    # Convert to datetime objects
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    
+    # Fetch data from the database
+    invoices = db.session.query(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+    invoice_items = db.session.query(InvoiceItem).join(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+    customers = db.session.query(Customer).all()
+    products = db.session.query(Product).all()
 
-# Sales and marketing route
-@main_bp.route('/sales_and_marketing', methods=['POST'])
-def sales_and_marketing():
-    data = request.get_json()
-    customers_df = pd.DataFrame(data)  # Assuming the data is in a DataFrame format
+    # Process data to create a summary (this can be more complex depending on your requirements)
+    summary = {
+        'total_invoices': len(invoices),
+        'total_revenue': sum(item.price * item.quantity for item in invoice_items),
+        'total_customers': len(customers),
+        'total_products_sold': sum(item.quantity for item in invoice_items),
+    }
 
-    response = process_sales_and_marketing(customers_df)
-    return jsonify(response), 200
+    # Generate analysis and recommendations using OpenAI
+    openai.api_key = current_app.config['OPENAI_API_KEY']
+    prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=500
+    )
+    analysis = response.choices[0].text.strip()
+
+    return render_template('sales_report_result.html', summary=summary, analysis=analysis)
+            
+return render_template('sales_report.html')
