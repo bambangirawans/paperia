@@ -51,7 +51,21 @@ class Customer(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-
+    
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'phone': self.phone,
+            'email': self.email,
+            'address': self.address,
+            'city': self.city,
+            'zip': self.zip,
+            'organization_id': self.organization_id,
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
@@ -78,6 +92,21 @@ class Product(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'unit_price': str(self.unit_price),
+            'unit': self.unit,
+            'unit_sale': self.unit_sale,
+            'selling_price': str(self.selling_price),
+            'purchase_price': str(self.purchase_price),
+            'stock_onhand': self.stock_onhand,
+            'stock_reorder': self.stock_reorder,
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
 
 class ProductImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,7 +115,15 @@ class ProductImage(db.Model):
     imagepath = db.Column(db.String(255))
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-
+    def serialize(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'image': self.image,
+            'imagepath': str(self.imagepath),
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
 class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date)
@@ -99,6 +136,20 @@ class Invoice(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
+    
+    def serialize(self):
+        return {
+            'id': self.id,
+            'date': self.date.strftime('%Y-%m-%d'),
+            'customer_id': self.customer_id,
+            'subtotal': str(self.subtotal),
+            'discount': str(self.discount),
+            'total': str(self.total),
+            'tax': str(self.tax),
+            'amount': str(self.amount),
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
 
 class InvoiceItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -115,6 +166,23 @@ class InvoiceItem(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
+    
+    def serialize(self):
+        return {
+            'id': self.id,
+            'invoice_id': self.invoice_id,
+            'product_id': self.product_id,
+            'qty': self.qty,
+            'unit_price': str(self.unit_price),
+            'unit_sale': self.unit_sale,
+            'subtotal': str(self.subtotal),
+            'discount': str(self.discount),
+            'total': str(self.total),
+            'tax': str(self.tax),
+            'amount': str(self.amount),
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
 
 class Purchase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -128,7 +196,20 @@ class Purchase(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
-
+    def serialize(self):
+        return {
+            'id': self.id,
+            'date': self.date.strftime('%Y-%m-%d'),
+            'supplier_id': self.supplier_id,
+            'subtotal': str(self.subtotal),
+            'discount': str(self.discount),
+            'total': str(self.total),
+            'tax': str(self.tax),
+            'amount': str(self.amount),
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
 class PurchaseItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     purchase_id = db.Column(db.Integer, db.ForeignKey('purchase.id'))
@@ -144,7 +225,23 @@ class PurchaseItem(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
-
+    def serialize(self):
+        return {
+            'id': self.id,
+            'purchase_id': self.purchase_id,
+            'product_id': self.product_id,
+            'qty': self.qty,
+            'unit_price': str(self.unit_price),
+            'unit_sale': self.unit_sale,
+            'subtotal': str(self.subtotal),
+            'discount': str(self.discount),
+            'total': str(self.total),
+            'tax': str(self.tax),
+            'amount': str(self.amount),
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
 class Issuer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
@@ -166,6 +263,15 @@ class Account(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.type,
+            'issuer_id': self.issuer_id,
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
 
 class AccountTransaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -179,3 +285,17 @@ class AccountTransaction(db.Model):
     created = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
     updated = db.Column(db.TIMESTAMP, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
+    
+    def serialize(self):
+        return {
+            'id': self.id,
+            'date': self.date.strftime('%Y-%m-%d'),
+            'type': self.type,
+            'description': self.description,
+            'reff': self.reff,
+            'amount': str(self.amount),
+            'account_id': self.account_id,
+            'debt_credit': self.debt_credit,
+            'created': self.created.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated': self.updated.strftime('%Y-%m-%d %H:%M:%S')
+        }
