@@ -50,7 +50,12 @@ def scan_item():
     return jsonify({'error': 'Invalid file type'}), 400
 import re
 
+
 def parse_invoice(text):
+    if not isinstance(text, str):
+        raise TypeError("Expected string or bytes-like object")
+        
+        
     invoice_data = {}
     
     # Invoice Number patterns
@@ -93,6 +98,9 @@ def parse_invoice(text):
     return invoice_data
 
 def parse_customer(text):
+    if not isinstance(text, str):
+        raise TypeError("Expected string or bytes-like object")
+        
     customer_data = {}
     name_match = re.search(r'(?:Customer|To|Kepada)\s*[:]*\s*(.+)', text)
     address_match = re.search(r'(?:Address|Ship|Alamat)\s*[:]*\s*(.+)', text)
@@ -105,13 +113,18 @@ def parse_customer(text):
     return customer_data
 
 def parse_products(text):
+    if not isinstance(text, str):
+        raise TypeError("Expected string or bytes-like object")
+
     products = []
-    product_pattern = re.compile(r'(?:Product|Description|Nama|Nama Barang|Keterangan)\s*[:]*\s*(.+?)\s*Qty\s*[:]*\s*(\d+)\s*Price\s*[:]*\s*\$?([\d.]+)', re.DOTALL)
+    product_pattern = re.compile(r'(\d+)\s+([^0-9]+)\s+(\d{1,3}(?:,\d{3})*\.\d{2})\s+(\d{1,3}(?:,\d{3})*\.\d{2})')
+    
     for match in product_pattern.finditer(text):
         product_data = {
-            'name': match.group(1).strip(),
-            'quantity': int(match.group(2)),
-            'unit_price': float(match.group(3))
+            'quantity': int(match.group(1)),
+            'description': match.group(2).strip(),
+            'unit_price': float(match.group(3).replace(',', '')),
+            'amount': float(match.group(4).replace(',', ''))
         }
         products.append(product_data)
     return products
