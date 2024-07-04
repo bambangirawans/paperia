@@ -278,7 +278,7 @@ def generate_analysis(summary):
     
     prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
     response = openai.Completion.create(
-        engine="text-davinci-003",
+        model="text-davinci-003",
         prompt=prompt,
         max_tokens=500
     )
