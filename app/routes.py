@@ -52,81 +52,76 @@ import re
 
 
 def parse_invoice(text):
-    if not isinstance(text, str):
-        raise TypeError("Expected string or bytes-like object")
-        
+    
         
     invoice_data = {}
-    
-    # Invoice Number patterns
-    invoice_number_patterns = [
-        r'Invoice\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
-        r'INV\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
-        r'No\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
-        r'Nomor\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
-        r'Nota\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
-        r'Faktur\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)'
-    ]
-    
-    for pattern in invoice_number_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            invoice_data['invoice_number'] = match.group(1)
-            break  # Stop on first match
-    
-    # Date pattern
-    date_patterns = [ 
-        r'Date\s*[\s:#-]*\s*(\S+)',
-        r'Tanggal\s*[\s:#-]*\s*(\S+)'
-    ]
-    for pattern in date_patterns:
-        match = re.search(pattern, text)
-        if match:
-            invoice_data['date'] = match.group(1)
-            break  # Stop on first match
-    
-    # Subtotal pattern
-    subtotal_pattern = r'Subtotal\s*[:#-]*\s*\$?([\d.]+)'
-    match = re.search(subtotal_pattern, text)
-    invoice_data['subtotal'] = match.group(1) if match else None
-    
-    # Total pattern
-    total_pattern = r'(?:Total|Jumlah)\s*[:#-]*\s*\$?([\d.]+)'
-    match = re.search(total_pattern, text)
-    invoice_data['total'] = match.group(1) if match else None
+    if isinstance(text, str):
+        invoice_number_patterns = [
+            r'Invoice\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+            r'INV\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+            r'No\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+            r'Nomor\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+            r'Nota\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+            r'Faktur\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)'
+        ]
+        
+        for pattern in invoice_number_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                invoice_data['invoice_number'] = match.group(1)
+                break  # Stop on first match
+        
+        # Date pattern
+        date_patterns = [ 
+            r'Date\s*[\s:#-]*\s*(\S+)',
+            r'Tanggal\s*[\s:#-]*\s*(\S+)'
+        ]
+        for pattern in date_patterns:
+            match = re.search(pattern, text)
+            if match:
+                invoice_data['date'] = match.group(1)
+                break  # Stop on first match
+        
+        # Subtotal pattern
+        subtotal_pattern = r'Subtotal\s*[:#-]*\s*\$?([\d.]+)'
+        match = re.search(subtotal_pattern, text)
+        invoice_data['subtotal'] = match.group(1) if match else None
+        
+        # Total pattern
+        total_pattern = r'(?:Total|Jumlah)\s*[:#-]*\s*\$?([\d.]+)'
+        match = re.search(total_pattern, text)
+        invoice_data['total'] = match.group(1) if match else None
     
     return invoice_data
 
 def parse_customer(text):
-    if not isinstance(text, str):
-        raise TypeError("Expected string or bytes-like object")
         
     customer_data = {}
-    name_match = re.search(r'(?:Customer|To|Kepada)\s*[:]*\s*(.+)', text)
-    address_match = re.search(r'(?:Address|Ship|Alamat)\s*[:]*\s*(.+)', text)
-    phone_match = re.search(r'(?:Phone|Telp)\s*[:]*\s*(\S+)', text)
-    
-    customer_data['name'] = name_match.group(1) if name_match else None
-    customer_data['address'] = address_match.group(1) if address_match else None
-    customer_data['phone'] = phone_match.group(1) if phone_match else None
+    if isinstance(text, str):
+        name_match = re.search(r'(?:Customer|To|Kepada)\s*[:]*\s*(.+)', text)
+        address_match = re.search(r'(?:Address|Ship|Alamat)\s*[:]*\s*(.+)', text)
+        phone_match = re.search(r'(?:Phone|Telp)\s*[:]*\s*(\S+)', text)
+        
+        customer_data['name'] = name_match.group(1) if name_match else None
+        customer_data['address'] = address_match.group(1) if address_match else None
+        customer_data['phone'] = phone_match.group(1) if phone_match else None
     
     return customer_data
 
 def parse_products(text):
-    if not isinstance(text, str):
-        raise TypeError("Expected string or bytes-like object")
-
+  
     products = []
-    product_pattern = re.compile(r'(\d+)\s+([^0-9]+)\s+(\d{1,3}(?:,\d{3})*\.\d{2})\s+(\d{1,3}(?:,\d{3})*\.\d{2})')
-    
-    for match in product_pattern.finditer(text):
-        product_data = {
-            'quantity': int(match.group(1)),
-            'description': match.group(2).strip(),
-            'unit_price': float(match.group(3).replace(',', '')),
-            'amount': float(match.group(4).replace(',', ''))
-        }
-        products.append(product_data)
+    if isinstance(text, str):
+        product_pattern = re.compile(r'(\d+)\s+([^0-9]+)\s+(\d{1,3}(?:,\d{3})*\.\d{2})\s+(\d{1,3}(?:,\d{3})*\.\d{2})')
+        
+        for match in product_pattern.finditer(text):
+            product_data = {
+                'quantity': int(match.group(1)),
+                'description': match.group(2).strip(),
+                'unit_price': float(match.group(3).replace(',', '')),
+                'amount': float(match.group(4).replace(',', ''))
+            }
+            products.append(product_data)
     return products
     
 def save_invoice_data(text):
@@ -330,7 +325,7 @@ def generate_analysis(summary):
     openai.api_key = current_app.config['OPENAI_API_KEY']
     
     prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
-    response = openai.Completion.create(
+    response = openai.completions.create(
         model="text-davinci-003",
         prompt=prompt,
         max_tokens=500
