@@ -1,7 +1,7 @@
 import openai
 
 def customer_service_chat(prompt):
-    openai.api_key = 'YOUR_API_KEY'
+    openai.api_key = current_app.config['OPENAI_API_KEY']
     response = openai.Completion.create(
         engine="davinci",
         prompt=prompt,
