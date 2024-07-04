@@ -1,6 +1,7 @@
 import os
 import logging
 import openai
+import re
 
 from flask import Blueprint, request, redirect, url_for, render_template, flash, current_app, jsonify
 from werkzeug.utils import secure_filename
@@ -47,25 +48,65 @@ def scan_item():
         return jsonify(detected_items), 200
     
     return jsonify({'error': 'Invalid file type'}), 400
+import re
 
 def parse_invoice(text):
     invoice_data = {}
-    invoice_data['invoice_number'] = re.search(r'Invoice Number:\s*(\S+)', text).group(1)
-    invoice_data['date'] = re.search(r'Date:\s*([\d-]+)', text).group(1)
-    invoice_data['subtotal'] = re.search(r'Subtotal:\s*\$?([\d.]+)', text).group(1)
-    invoice_data['total'] = re.search(r'Total:\s*\$?([\d.]+)', text).group(1)
+    
+    # Invoice Number patterns
+    invoice_number_patterns = [
+        r'Invoice\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+        r'INV\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+        r'No\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+        r'Nomor\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+        r'Nota\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)',
+        r'Faktur\s*[\s:#-]*Number\s*[:#-]*\s*(\S+)'
+    ]
+    
+    for pattern in invoice_number_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            invoice_data['invoice_number'] = match.group(1)
+            break  # Stop on first match
+    
+    # Date pattern
+    date_patterns = [ 
+        r'Date\s*[\s:#-]*\s*(\S+)',
+        r'Tanggal\s*[\s:#-]*\s*(\S+)'
+    ]
+    for pattern in date_patterns:
+        match = re.search(pattern, text)
+        if match:
+            invoice_data['date'] = match.group(1)
+            break  # Stop on first match
+    
+    # Subtotal pattern
+    subtotal_pattern = r'Subtotal\s*[:#-]*\s*\$?([\d.]+)'
+    match = re.search(subtotal_pattern, text)
+    invoice_data['subtotal'] = match.group(1) if match else None
+    
+    # Total pattern
+    total_pattern = r'(?:Total|Jumlah)\s*[:#-]*\s*\$?([\d.]+)'
+    match = re.search(total_pattern, text)
+    invoice_data['total'] = match.group(1) if match else None
+    
     return invoice_data
 
 def parse_customer(text):
     customer_data = {}
-    customer_data['name'] = re.search(r'Customer Name:\s*(.+)', text).group(1)
-    customer_data['address'] = re.search(r'Address:\s*(.+)', text).group(1)
-    customer_data['phone'] = re.search(r'Phone:\s*(\S+)', text).group(1)
+    name_match = re.search(r'(?:Customer|To|Kepada)\s*[:]*\s*(.+)', text)
+    address_match = re.search(r'(?:Address|Ship|Alamat)\s*[:]*\s*(.+)', text)
+    phone_match = re.search(r'(?:Phone|Telp)\s*[:]*\s*(\S+)', text)
+    
+    customer_data['name'] = name_match.group(1) if name_match else None
+    customer_data['address'] = address_match.group(1) if address_match else None
+    customer_data['phone'] = phone_match.group(1) if phone_match else None
+    
     return customer_data
 
 def parse_products(text):
     products = []
-    product_pattern = re.compile(r'Product:\s*(.+?)\s*Qty:\s*(\d+)\s*Price:\s*\$?([\d.]+)', re.DOTALL)
+    product_pattern = re.compile(r'(?:Product|Description|Nama|Nama Barang|Keterangan)\s*[:]*\s*(.+?)\s*Qty\s*[:]*\s*(\d+)\s*Price\s*[:]*\s*\$?([\d.]+)', re.DOTALL)
     for match in product_pattern.finditer(text):
         product_data = {
             'name': match.group(1).strip(),
@@ -74,7 +115,6 @@ def parse_products(text):
         }
         products.append(product_data)
     return products
-
     
 def save_invoice_data(text):
     invoice_data = parse_invoice(text)
