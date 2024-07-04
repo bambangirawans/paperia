@@ -75,54 +75,53 @@ def parse_products(text):
     return products
 
     
-def save_invoice_data (text)
-
-        invoice_data = parse_invoice(extracted_text)
-        customer_data = parse_customer(extracted_text)
-        products_data = parse_products(extracted_text)
-        
-        customer = Customer.query.filter_by(name=customer_data['name']).first()
-        if not customer:
-            customer = Customer(
-                name=customer_data['name'],
-                address=customer_data['address'],
-                phone=customer_data['phone']
+def save_invoice_data(text):
+    invoice_data = parse_invoice(text)
+    customer_data = parse_customer(text)
+    products_data = parse_products(text)
+    
+    customer = Customer.query.filter_by(name=customer_data['name']).first()
+    if not customer:
+        customer = Customer(
+            name=customer_data['name'],
+            address=customer_data['address'],
+            phone=customer_data['phone']
+        )
+        db.session.add(customer)
+        db.session.commit()
+    
+    invoice = Invoice(
+        date=datetime.strptime(invoice_data['date'], '%Y-%m-%d'),
+        customer_id=customer.id,
+        subtotal=float(invoice_data['subtotal']),
+        total=float(invoice_data['total'])
+    )
+    db.session.add(invoice)
+    db.session.commit()
+    
+    for product_data in products_data:
+        product = Product.query.filter_by(name=product_data['name']).first()
+        if not product:
+            product = Product(
+                name=product_data['name'],
+                unit_price=product_data['unit_price']
             )
-            db.session.add(customer)
+            db.session.add(product)
             db.session.commit()
         
-        invoice = Invoice(
-            date=datetime.strptime(invoice_data['date'], '%Y-%m-%d'),
-            customer_id=customer.id,
-            subtotal=float(invoice_data['subtotal']),
-            total=float(invoice_data['total'])
+        invoice_item = InvoiceItem(
+            invoice_id=invoice.id,
+            product_id=product.id,
+            qty=product_data['quantity'],
+            unit_price=product.unit_price,
+            total=product_data['quantity'] * product.unit_price
         )
-        db.session.add(invoice)
-        db.session.commit()
-        
-       for product_data in products_data:
-
-            product = Product.query.filter_by(name=product_data['name']).first()
-            if not product:
-                product = Product(
-                    name=product_data['name'],
-                    unit_price=product_data['unit_price']
-                )
-                db.session.add(product)
-                db.session.commit()
-            
-            invoice_item = InvoiceItem(
-                invoice_id=invoice.id,
-                product_id=product.id,
-                qty=product_data['quantity'],
-                unit_price=product.unit_price,
-                total=product_data['quantity'] * product.unit_price
-            )
-            db.session.add(invoice_item)
-        
-        db.session.commit()
-        
+        db.session.add(invoice_item)
+    
+    db.session.commit()
+    
     return 'invoice successfully processed'
+
 
 @main_bp.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -275,37 +274,38 @@ def receive_goods():
 
 @main_bp.route('/sales_report', methods=['POST'])
 def sales_report():
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
+    if request.method == 'POST':
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
 
-    # Convert to datetime objects
-    start_date = datetime.strptime(start_date, '%Y-%m-%d')
-    end_date = datetime.strptime(end_date, '%Y-%m-%d')
-    
-    # Fetch data from the database
-    invoices = db.session.query(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
-    invoice_items = db.session.query(InvoiceItem).join(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
-    customers = db.session.query(Customer).all()
-    products = db.session.query(Product).all()
+        # Convert to datetime objects
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        # Fetch data from the database
+        invoices = db.session.query(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+        invoice_items = db.session.query(InvoiceItem).join(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+        customers = db.session.query(Customer).all()
+        products = db.session.query(Product).all()
 
-    # Process data to create a summary (this can be more complex depending on your requirements)
-    summary = {
-        'total_invoices': len(invoices),
-        'total_revenue': sum(item.price * item.quantity for item in invoice_items),
-        'total_customers': len(customers),
-        'total_products_sold': sum(item.quantity for item in invoice_items),
-    }
+        # Process data to create a summary (this can be more complex depending on your requirements)
+        summary = {
+            'total_invoices': len(invoices),
+            'total_revenue': sum(item.price * item.quantity for item in invoice_items),
+            'total_customers': len(customers),
+            'total_products_sold': sum(item.quantity for item in invoice_items),
+        }
 
-    # Generate analysis and recommendations using OpenAI
-    openai.api_key = current_app.config['OPENAI_API_KEY']
-    prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=500
-    )
-    analysis = response.choices[0].text.strip()
+        # Generate analysis and recommendations using OpenAI
+        openai.api_key = current_app.config['OPENAI_API_KEY']
+        prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=500
+        )
+        analysis = response.choices[0].text.strip()
 
-    return render_template('sales_report_result.html', summary=summary, analysis=analysis)
+        return render_template('sales_report_result.html', summary=summary, analysis=analysis)
             
-return render_template('sales_report.html')
+    return render_template('sales_report.html')
