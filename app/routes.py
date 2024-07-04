@@ -1,9 +1,10 @@
 import os
 import logging
+import openai
 
 from flask import Blueprint, request, redirect, url_for, render_template, flash, current_app, jsonify
 from werkzeug.utils import secure_filename
-
+from datetime import datetime 
 from .models.db import db, Document, Organization, Customer, Supplier, Product, ProductImage, Invoice, InvoiceItem, Purchase, PurchaseItem, Issuer, Account, AccountTransaction
 from .models.ocr import scan_and_detect, extract_text_from_image, correct_text, preprocess_image
 from .models.payment import process_payment
@@ -271,20 +272,44 @@ def receive_goods():
 
     response = process_goods_receipt(image_path, expected_items)
     return jsonify(response), 200
-
-@main_bp.route('/sales_report', methods=['POST'])
+    
+def generate_analysis(summary):
+    openai.api_key = current_app.config['OPENAI_API_KEY']
+    
+    prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=500
+    )
+    
+    return response.choices[0].text.strip()
+    
+@main_bp.route('/sales_report', methods=['GET', 'POST'])
 def sales_report():
     if request.method == 'POST':
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
 
-        # Convert to datetime objects
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date, '%Y-%m-%d')
-        
+        # Check if dates are provided
+        if not start_date_str or not end_date_str:
+            start_date = datetime.min  # Default start date (earliest possible)
+            end_date = datetime.max    # Default end date (latest possible)
+        else:
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            except ValueError as e:
+                return f"Error parsing dates: {e}"
+
         # Fetch data from the database
-        invoices = db.session.query(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
-        invoice_items = db.session.query(InvoiceItem).join(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+        if start_date and end_date:
+            invoices = db.session.query(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+            invoice_items = db.session.query(InvoiceItem).join(Invoice).filter(Invoice.date.between(start_date, end_date)).all()
+        else:
+            invoices = db.session.query(Invoice).all()
+            invoice_items = db.session.query(InvoiceItem).all()
+
         customers = db.session.query(Customer).all()
         products = db.session.query(Product).all()
 
@@ -296,16 +321,10 @@ def sales_report():
             'total_products_sold': sum(item.quantity for item in invoice_items),
         }
 
-        # Generate analysis and recommendations using OpenAI
-        openai.api_key = current_app.config['OPENAI_API_KEY']
-        prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
-            max_tokens=500
-        )
-        analysis = response.choices[0].text.strip()
+        generate_analysis(summary)
 
         return render_template('sales_report_result.html', summary=summary, analysis=analysis)
-            
+
+    # Render the form initially
     return render_template('sales_report.html')
+
