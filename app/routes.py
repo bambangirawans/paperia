@@ -69,7 +69,7 @@ def parse_invoice(text):
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 invoice_data['invoice_number'] = match.group(1)
-                break  # Stop on first match
+                break  
         
         # Date pattern
         date_patterns = [ 
@@ -80,7 +80,7 @@ def parse_invoice(text):
             match = re.search(pattern, text)
             if match:
                 invoice_data['date'] = match.group(1)
-                break  # Stop on first match
+                break  
         
         # Subtotal pattern
         subtotal_pattern = r'Subtotal\s*[:#-]*\s*\$?([\d.]+)'
@@ -325,8 +325,8 @@ def generate_analysis(summary):
     openai.api_key = current_app.config['OPENAI_API_KEY']
     
     prompt = f"Generate a business analysis and recommendations based on the following data: {summary}"
-    response = openai.completions.create(
-        model="text-davinci-003",
+    response = openai.Completion.create(
+        model="davinci",
         prompt=prompt,
         max_tokens=500
     )
@@ -361,7 +361,6 @@ def sales_report():
         customers = db.session.query(Customer).all()
         products = db.session.query(Product).all()
 
-        # Process data to create a summary (this can be more complex depending on your requirements)
         summary = {
             'total_invoices': len(invoices),
             'total_revenue': sum(item.price * item.quantity for item in invoice_items),
